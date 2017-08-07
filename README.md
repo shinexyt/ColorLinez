@@ -1,2 +1,2 @@
 # ColorLinez
-A simple game use canvas.
+A simple game use html5 canvas.
