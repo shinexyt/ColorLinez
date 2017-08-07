@@ -1,0 +1,328 @@
+﻿
+var canvas = document.getElementById("myCanvas");
+var context = canvas.getContext("2d");
+var arrayObj = new Array();
+var currentColor, currentX, currentY, clickX, clickY, randomX, randomY;
+var num = 0;
+canvas.addEventListener('click', onclick, false);
+var arrayPath1 = new Array();
+var jsonPath = { "list": [] };
+function onclick(event)
+{
+    var mousePos = getMousePos(canvas, event);
+    if (GetSelectedBall(mousePos.x, mousePos.y))
+    {
+        CreateBall("pink", currentX, currentY);
+    }
+    else
+    {
+        clickX = mousePos.x;
+        clickY = mousePos.y;
+        getPaths(currentX, currentY);
+        //alert(arrayPath1.length);
+        arrayObj.splice(currentX, currentY, currentColor);
+        move();
+    }
+}
+function getPaths(x, y)
+{
+    var temX = x;
+    var temY = y;
+    var arrayDirection = getDirection(x, y);
+    switch (arrayDirection[0])
+    {
+        case "top":
+            y -= 40;
+            break;
+        case "right":
+            x += 40;
+            break;
+        case "down":
+            y += 40;
+            break;
+        case "left":
+            x -= 40;
+            break;
+    }
+    if (x < 20 || x > 340 || y < 20 || y > 340)
+    {
+        arrayDirection.splice(0, 1);
+        getPaths(temX, temY);
+    }
+    else
+    {
+        if (getExistDirection(x, y) == [])
+        {
+            arrayDirection.splice(0, 1);
+            getPaths(temX, temY);
+        }
+        else
+        {
+            if (!IsContains(arrayObj, [x, y]))
+            {
+                if (!isFinish(x, y))
+                {
+                    jsonPath.list.push({ "coordinate": [x, y], "direction": getDirection(x, y) });
+                    getPaths(x, y);
+                }
+                else
+                    jsonPath.list.push({ "coordinate": [x, y], "direction": [] });
+            }
+            else
+            {
+                arrayDirection.splice(0, 1);
+                getPaths(temX, temY);
+            }
+        }
+    }
+}
+function getExistDirection(x, y)
+{
+    var array = [0];
+    for (i = 0; i < jsonPath.list.length; i++)
+    {
+        if (jsonPath.list[i].coordinate == [x, y])
+        {
+            array = jsonPath.list[i].direction;
+            break;
+        }
+    }
+    return array;
+}
+function getDirection(x, y)
+{
+    var xx = Math.ceil(clickX / 40) * 20;
+    var yy = Math.ceil(clickY / 40) * 20;
+    if (getExistDirection(x, y)[0].toString() != "0")
+        return getExistDirection(x, y);
+    var array = new Array();
+    var horizon = "none";
+    if (xx - x < 0)
+        horizon = "left";
+    else if (xx - x > 0)
+        horizon = "right";
+
+    var vertical = "none";
+    if (yy - y < 0)
+        vertical = "top";
+    if (yy - y > 0)
+        vertical = "down";
+
+    if (horizon == "none")
+    {
+        if (vertical == "none" || vertical == "top")
+            array = ["top", "right", "down", "left"];
+        else
+            array = ["down", "left", "top", "right"];
+    }
+    else if (horizon == "left")
+    {
+        if (vertical == "none" || vertical == "top")
+            array = ["left", "top", "right", "down"];
+        else
+            array = ["down", "left", "top", "right"];
+    }
+    else
+    {
+        if (vertical == "none" || vertical == "down")
+            array = ["right", "down", "left", "top"];
+        else (vertical == "top")
+        array = ["top", "right", "down", "left"];
+    }
+    return array;
+}
+function checkPath(x, y, temArrayPath)
+{
+    if (x < 20 || x > 340 || y < 20 || y > 340)
+        return;
+    if (!IsContains(arrayObj, [x, y]) && !IsContains(temArrayPath, [x, y]))
+    {
+        temArrayPath.push([x, y]);
+        if (!isFinish(x, y))
+            getPaths(x, y, temArrayPath);
+        else
+            arrayPath1.push(temArrayPath);
+    }
+}
+
+function move()
+{
+    RemoveBall("white", currentX, currentY);
+    currentX = jsonPath.list[num].coordinate[0];
+    currentY = jsonPath.list[num].coordinate[1];
+    CreateBall(currentColor, currentX, currentY);
+    num++;
+    if (num < jsonPath.list.length)
+        requestAnimationFrame(move);
+    else
+        arrayObj.push([currentX, currentY, currentColor]);
+}
+function moveObjects()
+{
+    RemoveBall("white", currentX, currentY);
+    var x = 1;
+    if (clickX - currentX < 0)
+        x = -1;
+
+    var y = 1;
+    if (clickY - currentY < 0)
+        y = -1;
+
+    if (!(clickX > currentX - 20 && clickX < currentX + 20))
+    {
+        currentX += x * 40;
+        CreateBall(currentColor, currentX, currentY);
+        requestAnimationFrame(moveObjects);
+    }
+    else
+    {
+        if (!(clickY > currentY - 20 && clickY < currentY + 20))
+        {
+            currentY += y * 40;
+            CreateBall(currentColor, currentX, currentY);
+            requestAnimationFrame(moveObjects);
+        }
+        else
+        {
+            CreateBall(currentColor, currentX, currentY);
+            arrayObj.push([currentX, currentY, currentColor]);
+        }
+    }
+
+}
+function isFinish(x, y)
+{
+    if (clickX > x - 20 && clickX < x + 20 && clickY > y - 20 && clickY < y + 20)
+        return true;
+    else
+        return false;
+}
+function getMousePos(canvas, evt)
+{
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left * (canvas.width / rect.width),
+        y: evt.clientY - rect.top * (canvas.height / rect.height)
+    }
+}
+function CreateBall(color, x, y)
+{
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, 10, 0, 2 * Math.PI);
+    context.fill();
+}
+function RemoveBall(color, x, y)
+{
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, 11, 0, 2 * Math.PI);
+    context.fill();
+}
+function CreateRandomBall()
+{
+    if (arrayObj.length != 81)
+    {
+        ReturnXY();
+        var color = GetRandomColor();
+        context.fillStyle = color;
+        context.beginPath();
+        context.arc(randomX, randomY, 10, 0, 2 * Math.PI);
+        //context.stroke();
+        context.lineWidth = 0;
+        context.fill();
+        arrayObj.push([randomX, randomY, color]);
+    }
+    else
+        alert("满了");
+}
+function ReturnXY()
+{
+    randomX = GetRandomNum();
+    randomY = GetRandomNum();
+    if (arrayObj.length != 0)
+        if (IsContains(arrayObj, [randomX, randomY]))
+        {
+            ReturnXY();
+        }
+}
+function IsContains(arr, obj)
+{
+    var num = arr.length;
+    var isContains = false;
+    for (i = 0; i < num; i++)
+    {
+        if (arr[i][0] == obj[0] && arr[i][1] == obj[1])
+        {
+            isContains = true;
+            break;
+        }
+    }
+    return isContains;
+}
+function GetSelectedBall(x, y)
+{
+    var isSelected = false;
+    for (i = 0; i < arrayObj.length; i++)
+    {
+        if (x > arrayObj[i][0] - 20 && x < arrayObj[i][0] + 20)
+        {
+            if (y > arrayObj[i][1] - 20 && y < arrayObj[i][1] + 20)
+            {
+                isSelected = true;
+                currentColor = arrayObj[i][2];
+                currentX = arrayObj[i][0];
+                currentY = arrayObj[i][1];
+                break;
+            }
+        }
+    }
+    return isSelected;
+}
+function GetRandomColor()
+{
+    var num = Math.ceil(Math.random() * 5);
+    switch (num)
+    {
+        case 1:
+            return "blue";
+            break;
+        case 2:
+            return "red";
+            break;
+        case 3:
+            return "magenta";
+            break;
+        case 4:
+            return "green";
+            break;
+        case 5:
+            return "black";
+            break;
+    }
+}
+//获取随机棋子位置
+function GetRandomNum()
+{
+    var num = Math.floor(Math.random() * 9);
+    return 20 + 40 * num;
+}
+//绘制棋盘
+function DrawRect()
+{
+    context = canvas.getContext("2d");
+    for (var i = 0; i <= 360; i += 40)
+    {
+        context.beginPath();
+        context.moveTo(0, i);
+        context.lineTo(360, i);
+        context.closePath();
+        context.stroke();
+        context.beginPath();
+        context.moveTo(i, 0);
+        context.lineTo(i, 360);
+        context.closePath();
+        context.stroke();
+    }
+
+}

@@ -1,0 +1,241 @@
+﻿
+var canvas = document.getElementById("myCanvas");
+var context = canvas.getContext("2d");
+var arrayObj = new Array();
+var currentColor, currentX, currentY, clickX, clickY, randomX, randomY;
+var num = 0;
+canvas.addEventListener('click', onclick, false);
+var arrayPath1 = new Array();
+function onclick(event)
+{
+    var mousePos = getMousePos(canvas, event);
+    if (GetSelectedBall(mousePos.x, mousePos.y))
+    {
+        CreateBall("pink", currentX, currentY);
+    }
+    else
+    {
+        clickX = mousePos.x;
+        clickY = mousePos.y;
+        getPaths(currentX, currentY, new Array());
+        alert(arrayPath1.length);
+        arrayObj.splice(currentX, currentY, currentColor);
+        //move();
+    }
+}
+function getPaths(x, y, temArrayPath)
+{
+    var array1 = temArrayPath.slice();
+    x += 40;
+    checkPath(x, y, array1);
+    x -= 40;
+
+    var array2 = temArrayPath.slice();
+    x -= 40;
+    checkPath(x, y, array2);
+    x += 40;
+
+    var array3 = temArrayPath.slice();
+    y += 40;
+    checkPath(x, y, array3);
+    y -= 40;
+
+    var array4 = temArrayPath.slice();
+    y -= 40;
+    checkPath(x, y, array4);
+}
+function checkPath(x, y, temArrayPath)
+{
+    if (x < 20 || x > 340 || y < 20 || y > 340)
+        return;
+    if (!IsContains(arrayObj, [x, y]) && !IsContains(temArrayPath, [x, y]))
+    {
+        temArrayPath.push([x, y]);
+        if (!isFinish(x, y))
+            getPaths(x, y, temArrayPath);
+        else
+            arrayPath1.push(temArrayPath);
+    }
+}
+
+function move()
+{
+    RemoveBall("white", currentX, currentY);
+    currentX = arrayPath1[num][0];
+    currentY = arrayPath1[num][1];
+    CreateBall(currentColor, currentX, currentY);
+    num++;
+    if (num < arrayPath1.length)
+        requestAnimationFrame(move);
+    else
+        arrayObj.push([currentX, currentY, currentColor]);
+}
+function moveObjects()
+{
+    RemoveBall("white", currentX, currentY);
+    var x = 1;
+    if (clickX - currentX < 0)
+        x = -1;
+
+    var y = 1;
+    if (clickY - currentY < 0)
+        y = -1;
+
+    if (!(clickX > currentX - 20 && clickX < currentX + 20))
+    {
+        currentX += x * 40;
+        CreateBall(currentColor, currentX, currentY);
+        requestAnimationFrame(moveObjects);
+    }
+    else
+    {
+        if (!(clickY > currentY - 20 && clickY < currentY + 20))
+        {
+            currentY += y * 40;
+            CreateBall(currentColor, currentX, currentY);
+            requestAnimationFrame(moveObjects);
+        }
+        else
+        {
+            CreateBall(currentColor, currentX, currentY);
+            arrayObj.push([currentX, currentY, currentColor]);
+        }
+    }
+
+}
+function isFinish(x, y)
+{
+    if (clickX > x - 20 && clickX < x + 20 && clickY > y - 20 && clickY < y + 20)
+        return true;
+    else
+        return false;
+}
+function getMousePos(canvas, evt)
+{
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left * (canvas.width / rect.width),
+        y: evt.clientY - rect.top * (canvas.height / rect.height)
+    }
+}
+function CreateBall(color, x, y)
+{
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, 10, 0, 2 * Math.PI);
+    context.fill();
+}
+function RemoveBall(color, x, y)
+{
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, 11, 0, 2 * Math.PI);
+    context.fill();
+}
+function CreateRandomBall()
+{
+    if (arrayObj.length != 81)
+    {
+        ReturnXY();
+        var color = GetRandomColor();
+        context.fillStyle = color;
+        context.beginPath();
+        context.arc(randomX, randomY, 10, 0, 2 * Math.PI);
+        //context.stroke();
+        context.lineWidth = 0;
+        context.fill();
+        arrayObj.push([randomX, randomY, color]);
+    }
+    else
+        alert("满了");
+}
+function ReturnXY()
+{
+    randomX = GetRandomNum();
+    randomY = GetRandomNum();
+    if (arrayObj.length != 0)
+        if (IsContains(arrayObj, [randomX, randomY]))
+        {
+            ReturnXY();
+        }
+}
+function IsContains(arr, obj)
+{
+    var num = arr.length;
+    var isContains = false;
+    for (i = 0; i < num; i++)
+    {
+        if (arr[i][0] == obj[0] && arr[i][1] == obj[1])
+        {
+            isContains = true;
+            break;
+        }
+    }
+    return isContains;
+}
+function GetSelectedBall(x, y)
+{
+    var isSelected = false;
+    for (i = 0; i < arrayObj.length; i++)
+    {
+        if (x > arrayObj[i][0] - 20 && x < arrayObj[i][0] + 20)
+        {
+            if (y > arrayObj[i][1] - 20 && y < arrayObj[i][1] + 20)
+            {
+                isSelected = true;
+                currentColor = arrayObj[i][2];
+                currentX = arrayObj[i][0];
+                currentY = arrayObj[i][1];
+                break;
+            }
+        }
+    }
+    return isSelected;
+}
+function GetRandomColor()
+{
+    var num = Math.ceil(Math.random() * 5);
+    switch (num)
+    {
+        case 1:
+            return "blue";
+            break;
+        case 2:
+            return "red";
+            break;
+        case 3:
+            return "yellow";
+            break;
+        case 4:
+            return "green";
+            break;
+        case 5:
+            return "black";
+            break;
+    }
+}
+//获取随机棋子位置
+function GetRandomNum()
+{
+    var num = Math.floor(Math.random() * 9);
+    return 20 + 40 * num;
+}
+//绘制棋盘
+function DrawRect()
+{
+    context = canvas.getContext("2d");
+    for (var i = 0; i <= 360; i += 40)
+    {
+        context.beginPath();
+        context.moveTo(0, i);
+        context.lineTo(360, i);
+        context.closePath();
+        context.stroke();
+        context.beginPath();
+        context.moveTo(i, 0);
+        context.lineTo(i, 360);
+        context.closePath();
+        context.stroke();
+    }
+
+}
