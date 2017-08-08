@@ -215,6 +215,17 @@ var map = {
     context.strokeText("Next colors : ", 0, 385);
     context.strokeText("Score : 0", 200, 385);
 })();
+function CheckIsGameOver() {
+    let count = 0
+    for (item in map.closeArea) {
+        count++;
+    }
+    if (count === gridColumns * gridRows) {
+        return true;
+    }
+    else
+        return false;
+}
 function onclick(event) {
 
     //var isRun = false;
@@ -317,9 +328,17 @@ function CreateNextBall() {
             node.isRoadBlock = true;
             node.color = color;
             map.closeArea[id] = node;
-            CreateBall(color, x, y);
-            map.setEndNode(node);
-            autoCheckResult();
+            if (!CheckIsGameOver()) {
+                CreateBall(color, x, y);
+                map.setEndNode(node);
+                autoCheckResult();
+            }
+            else {
+                alert('Game Over!');
+                window.location.reload();
+                break;
+            }
+
         }
         else
             i--;
