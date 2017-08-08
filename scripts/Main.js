@@ -1,22 +1,24 @@
-﻿var canvas = document.getElementById("myCanvas");
-var context = canvas.getContext("2d");
+﻿let canvas = document.getElementById("myCanvas");
+let context = canvas.getContext("2d");
 canvas.addEventListener('click', onclick, false);
-var bgColor = "beige";
-var gridColumns = 9;
-var gridRows = 9;
-var gridSize = 40;
-var ballRadius = 13;
-var colors = ["red", "blue", "orange", "green", "brown"];
-var nextColors = [];
-var paths = [];
-var eliminatedBalls = [];
-var num = 0;
-var num1 = 0;
-var result = 0;
-var currentColor = '';
-var score = 0;
-var stopJump = null;
-var map = {
+let bgColor = "beige";
+let gridColumns = 9;
+let gridRows = 9;
+let gridSize = 40;
+let ballRadius = 13;
+let colors = ["red", "blue", "orange", "green", "brown"];
+let nextColors = [];
+let paths = [];
+let eliminatedBalls = [];
+let num = 0;
+let num1 = 0;
+let result = 0;
+let currentColor = '';
+let score = 0;
+let stopJump = null;
+let stopRemove = null;
+let movePath = [];
+let map = {
     init: function () {
         map.costEnergy_S = 10;
         map.costEnergy_L = 14;
@@ -26,18 +28,13 @@ var map = {
     },
     /**  创建网格数据 */
     _createMapData: function () {
-        var cache = map.cache;
+        let cache = map.cache;
 
         map.data = [];
-        for (var y = 0, _arr; y < gridRows; y++) {
+        for (let y = 0, _arr; y < gridRows; y++) {
             _arr = [];
-            for (var x = 0, mapNode; x < gridColumns; x++) {
+            for (let x = 0, mapNode; x < gridColumns; x++) {
                 mapNode = new map.Node(gridSize * x + gridSize / 2, gridSize * y + gridSize / 2);
-                //if (Math.random() < map.roadBlock)
-                //{
-                //    mapNode.isRoadBlock = true;
-                //    map.closeArea[mapNode.id] = mapNode;
-                //};
                 map.cache[mapNode.id] = mapNode;
                 _arr.push(mapNode);
             };
@@ -67,8 +64,8 @@ var map = {
     },
     /**  检测当前开启列表中是否含有传进来的Node 存在则从开启列表中选中将其返回*/
     _isOpenAreaExitNode: function (node) {
-        var openArea = map.openArea;
-        for (var i = 0, l = openArea.length; i < l; i++) {
+        let openArea = map.openArea;
+        for (let i = 0, l = openArea.length; i < l; i++) {
             if (openArea[i].id === node.id) return openArea[i];
         };
 
@@ -82,25 +79,25 @@ var map = {
     },
     /**  获取当前点的F G H值 */
     getF: function (cNode, aNode) {
-        var energyW = Math.abs(map.endNode.x - aNode.x) * map.costEnergy_S;
-        var energyH = Math.abs(map.endNode.y - aNode.y) * map.costEnergy_S;
-        var _H = energyW + energyH;
-        var _G = (Math.abs(aNode.x - cNode.x) === Math.abs(aNode.y - cNode.y) ? map.costEnergy_L : map.costEnergy_S);
+        let energyW = Math.abs(map.endNode.x - aNode.x) * map.costEnergy_S;
+        let energyH = Math.abs(map.endNode.y - aNode.y) * map.costEnergy_S;
+        let _H = energyW + energyH;
+        let _G = (Math.abs(aNode.x - cNode.x) === Math.abs(aNode.y - cNode.y) ? map.costEnergy_L : map.costEnergy_S);
         if (cNode.fObj) _G = cNode.fObj.G + _G;
 
         return { F: _H + _G, H: _H, G: _G };
     },
     /**  获取当前父节点周围的点  */
     getAroundNode: function (node) {
-        var maxHeight = gridRows;
-        var maxWidth = gridColumns;
-        var nodeX;
-        var nodeY;
-        var corner = [];
+        let maxHeight = gridRows;
+        let maxWidth = gridColumns;
+        let nodeX;
+        let nodeY;
+        let corner = [];
 
-        for (var x = -1 * gridSize; x <= gridSize; x += gridSize) {
+        for (let x = -1 * gridSize; x <= gridSize; x += gridSize) {
             nodeX = node.x + x;
-            for (var y = -1 * gridSize, mapNode, _fObj, tmpNode; y <= gridSize; y += gridSize) {
+            for (let y = -1 * gridSize, mapNode, _fObj, tmpNode; y <= gridSize; y += gridSize) {
                 nodeY = node.y + y;
                 //剔除本身以及对角线的点
                 if ((x === 0 && y === 0) || x * y != 0) continue;
@@ -127,10 +124,10 @@ var map = {
     },
     /**  监测节点是否为拐角， 如果是 从开启列表中移除穿越拐角到达的点 */
     _isCorner: function (node, obj) {
-        var closeArea = map.closeArea;
-        var x = obj.x;
-        var y = obj.y;
-        var getNode = map.getNode;
+        let closeArea = map.closeArea;
+        let x = obj.x;
+        let y = obj.y;
+        let getNode = map.getNode;
 
         if (Math.abs(x) === Math.abs(y)) {
             if (x > 0 && y < 0) {
@@ -153,7 +150,7 @@ var map = {
     /**  不断删除查找周围节点，直到找寻到结束点 */
     search: function (node) {
         while (!map.closeArea[node.id]) {
-            var _fMinNode = map._getFMin();
+            let _fMinNode = map._getFMin();
             if (!_fMinNode) break;
             map.getAroundNode(_fMinNode);
             map.search(node);
@@ -188,10 +185,10 @@ var map = {
     resetArea: function () {
         map.openArea = [];
         map.closeArea = {};
-        for (var y = 0; y < gridRows; y++) {
-            for (var x = 0; x < gridColumns; x++) {
-                var id = map.getId(gridSize * x + gridSize / 2, gridSize * y + gridSize / 2);
-                var node = map.cache[id];
+        for (let y = 0; y < gridRows; y++) {
+            for (let x = 0; x < gridColumns; x++) {
+                let id = map.getId(gridSize * x + gridSize / 2, gridSize * y + gridSize / 2);
+                let node = map.cache[id];
                 if (node.isRoadBlock === true)
                     map.closeArea[id] = node;
             };
@@ -211,7 +208,7 @@ var map = {
     DrawRect();
     CreateInitialBall();
     GetNextColors();
-    context.font = "15px Times New Roman";
+    context.font = "15px Arial";
     context.strokeText("Next colors : ", 0, 385);
     context.strokeText("Score : 0", 200, 385);
 })();
@@ -227,10 +224,8 @@ function CheckIsGameOver() {
         return false;
 }
 function onclick(event) {
-
-    //var isRun = false;
-    var mousePos = getMousePos(event);
-    var node = map.getNode(mousePos.x, mousePos.y);
+    let mousePos = getMousePos(event);
+    let node = map.getNode(mousePos.x, mousePos.y);
     if (!node)
         return;
     if (node.isRoadBlock) {
@@ -250,21 +245,22 @@ function onclick(event) {
         if (paths.length > 0) {
             cancelAnimationFrame(stopJump);
             paths.reverse();
+            // movePath = SmoothPath(paths);
             currentColor = map.startNode.color;
             map.startNode.color = bgColor;
             map.startNode.isRoadBlock = false;
             //delete map.closeArea[map.startNode.id];
             RemoveBall(map.startNode.x, map.startNode.currentY);
-            var moveAnimation = setInterval(function () {
+            let moveAnimation = setInterval(function () {
                 if (num > 0)
                     RemoveBall(paths[num - 1].x, paths[num - 1].y);
-                var x = paths[num].x;
-                var y = paths[num].y;
+                let x = paths[num].x;
+                let y = paths[num].y;
                 CreateBall(currentColor, x, y);
                 num++;
                 if (num >= paths.length) {
                     clearInterval(moveAnimation);
-                    var node = map.getNode(x, y);
+                    let node = map.getNode(x, y);
                     node.color = currentColor;
                     node.isRoadBlock = true;
 
@@ -279,15 +275,32 @@ function onclick(event) {
         }
         else
             map.resetArea();
-
-        //isRun = true;
     }
+}
+function SmoothPath(frames) {
+    let tempPath = [];
+    tempPath.push({ x: map.startNode.x, y: map.startNode.y });
+
+    for (let i = 0; i < paths.length; i++) {
+        if (tempPath[i].x === paths[i].x) {
+            for (let j = 1; j < frames; j++) {
+                tempPath.push({ x: tempPath[i].x, y: tempPath[i].y + j * gridSize / frames });
+            }
+        }
+        else {
+            for (let j = 1; j < frames; j++) {
+                tempPath.push({ x: tempPath[i].x + j * gridSize / frames, y: tempPath[i].y });
+            }
+        }
+        tempPath.push({ x: paths[i].x, y: paths[i].y });
+    }
+    return tempPath;
 }
 function DrawRect() {
     let canvas = document.getElementById("bgCanvas");
     let context = canvas.getContext("2d");
-    var endPoint = gridColumns * gridSize;
-    for (var i = 0; i <= endPoint; i += gridSize) {
+    let endPoint = gridColumns * gridSize;
+    for (let i = 0; i <= endPoint; i += gridSize) {
         context.beginPath();
         context.moveTo(0, i);
         context.lineTo(endPoint, i);
@@ -302,11 +315,11 @@ function DrawRect() {
 }
 function CreateInitialBall() {
     for (i = 0; i < 5; i++) {
-        var color = GetRandomColor();
-        var x = GetRandomNum();
-        var y = GetRandomNum();
-        var node = map.getNode(x, y);
-        var id = map.getId(x, y);
+        let color = GetRandomColor();
+        let x = GetRandomNum();
+        let y = GetRandomNum();
+        let node = map.getNode(x, y);
+        let id = map.getId(x, y);
         if (!node.isRoadBlock) {
             node.isRoadBlock = true;
             node.color = color;
@@ -319,11 +332,11 @@ function CreateInitialBall() {
 }
 function CreateNextBall() {
     for (let i = 0; i < 3; i++) {
-        var color = nextColors[i];
-        var x = GetRandomNum();
-        var y = GetRandomNum();
-        var node = map.getNode(x, y);
-        var id = map.getId(x, y);
+        let color = nextColors[i];
+        let x = GetRandomNum();
+        let y = GetRandomNum();
+        let node = map.getNode(x, y);
+        let id = map.getId(x, y);
         if (!node.isRoadBlock) {
             node.isRoadBlock = true;
             node.color = color;
@@ -362,10 +375,10 @@ function GetNextColors() {
 }
 function CreateBall(color, x, y) {
     //增加小球渐变颜色，实现粗糙光照3d效果。
-    var grd = context.createRadialGradient(x - 2, y - 2, 1, x, y, 10);
+    let grd = context.createRadialGradient(x - 2, y - 2, 1, x, y, 10);
     grd.addColorStop(1, color);
     grd.addColorStop(0, "white");
-
+    // context.fillStyle = "rgba(255,255,255,0.5)";
     context.fillStyle = grd;
     context.beginPath();
     context.arc(x, y, ballRadius, 0, 2 * Math.PI);
@@ -390,9 +403,9 @@ function RemoveBall(x, y) {
     context.clearRect(x - ballRadius, y - ballRadius, ballRadius * 2, ballRadius * 2)
 }
 function getMousePos(evt) {
-    var rect = canvas.getBoundingClientRect();
-    var x = evt.clientX - rect.left * (canvas.width / rect.width);
-    var y = evt.clientY - rect.top * (canvas.height / rect.height);
+    let rect = canvas.getBoundingClientRect();
+    let x = evt.clientX - rect.left * (canvas.width / rect.width);
+    let y = evt.clientY - rect.top * (canvas.height / rect.height);
     return {
         x: Math.ceil(x / gridSize) * gridSize - gridSize / 2,
         y: Math.ceil(y / gridSize) * gridSize - gridSize / 2
@@ -407,18 +420,18 @@ function getScore(startScore) {
         num = 0;
 }
 function getEliminatedBalls() {
-    var node = map.endNode;
-    var h = [];
-    var v = [];
-    var l = [];
-    var r = [];
+    let node = map.endNode;
+    let h = [];
+    let v = [];
+    let l = [];
+    let r = [];
     for (let i = -1; i < 2; i++) {
         for (j = -1; j < 2; j++) {
             if (i == 0 && j == 0)
                 continue;
             for (k = 1; k < 9; k++) {
                 if (node.x + i * k * gridSize > 0 && node.x + i * k * gridSize < 380 && node.y + j * k * gridSize > 0 && node.y + j * k * gridSize < 380) {
-                    var leftNode = map.cache[map.getId(node.x + i * k * gridSize, node.y + j * k * gridSize)];
+                    let leftNode = map.cache[map.getId(node.x + i * k * gridSize, node.y + j * k * gridSize)];
                     if (leftNode.color == node.color) {
                         if (Math.abs(i + j) == 2)
                             r.push(leftNode);
@@ -493,9 +506,10 @@ function RemoveBalls() {
     RemoveBall(eliminatedBalls[num1].x, eliminatedBalls[num1].y);
     num1++;
     if (num1 < eliminatedBalls.length)
-        requestAnimationFrame(RemoveBalls);
+        stopRemove = requestAnimationFrame(RemoveBalls);
     else {
         num1 = 0;
         eliminatedBalls = [];
+        cancelAnimationFrame(stopRemove);
     }
 }
