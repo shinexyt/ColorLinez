@@ -1,13 +1,26 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>ColorLinez</title>
+    <style>
+        canvas {
+            /* margin: 10px; */
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+        }
+    </style>
 </head>
+
 <body>
-     <canvas width="370" height="500" id="myCanvas" style="margin:10px"></canvas>
-     <script src="scripts/Main.js"></script>
+    <canvas width="370" height="500" id="bgCanvas"></canvas>
+    <canvas width="370" height="500" id="myCanvas"></canvas>
+    <script src="scripts/Main.js"></script>
 </body>
+
 </html>

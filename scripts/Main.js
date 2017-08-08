@@ -5,7 +5,7 @@ var bgColor = "beige";
 var gridColumns = 9;
 var gridRows = 9;
 var gridSize = 40;
-var ballRadius = 10;
+var ballRadius = 13;
 var colors = ["red", "blue", "orange", "green", "brown"];
 var nextColors = [];
 var paths = [];
@@ -216,34 +216,55 @@ var map = {
     context.strokeText("Score : 0", 200, 385);
 })();
 function onclick(event) {
-    cancelAnimationFrame(stopJump);
+
     //var isRun = false;
     var mousePos = getMousePos(event);
     var node = map.getNode(mousePos.x, mousePos.y);
     if (!node)
         return;
     if (node.isRoadBlock) {
-
+        cancelAnimationFrame(stopJump);
         if (map.startNode) {
-            cancelAnimationFrame(stopJump);
-            RemoveBall(bgColor, map.startNode.x, map.startNode.currentY);
+            RemoveBall(map.startNode.x, map.startNode.currentY);
             CreateBall(map.startNode.color, map.startNode.x, map.startNode.y);
         }
         map.setStartNode(node);
         SelectBall();
-        // CreateBall("black", node.x, node.y);
     }
     else {
+        if (!map.startNode)
+            return;
         map.setEndNode(node);
         map.getPath();
         if (paths.length > 0) {
+            cancelAnimationFrame(stopJump);
             paths.reverse();
             currentColor = map.startNode.color;
             map.startNode.color = bgColor;
             map.startNode.isRoadBlock = false;
             //delete map.closeArea[map.startNode.id];
-            RemoveBall(bgColor, map.startNode.x, map.startNode.currentY);
-            move();
+            RemoveBall(map.startNode.x, map.startNode.currentY);
+            var moveAnimation = setInterval(function () {
+                if (num > 0)
+                    RemoveBall(paths[num - 1].x, paths[num - 1].y);
+                var x = paths[num].x;
+                var y = paths[num].y;
+                CreateBall(currentColor, x, y);
+                num++;
+                if (num >= paths.length) {
+                    clearInterval(moveAnimation);
+                    var node = map.getNode(x, y);
+                    node.color = currentColor;
+                    node.isRoadBlock = true;
+
+                    num = 0;
+                    paths = [];
+                    map.startNode = null;
+                    checkResult();
+                    map.resetArea();
+
+                }
+            }, 40);
         }
         else
             map.resetArea();
@@ -251,29 +272,9 @@ function onclick(event) {
         //isRun = true;
     }
 }
-function move() {
-    if (num > 0)
-        RemoveBall(bgColor, paths[num - 1].x, paths[num - 1].y);
-    var x = paths[num].x;
-    var y = paths[num].y;
-    CreateBall(currentColor, x, y);
-    num++;
-    if (num < paths.length)
-        requestAnimationFrame(move);
-    else {
-        var node = map.getNode(x, y);
-        node.color = currentColor;
-        node.isRoadBlock = true;
-
-        num = 0;
-        paths = [];
-        map.startNode = null;
-        checkResult(true);
-        map.resetArea();
-        GetNextColors();
-    }
-}
 function DrawRect() {
+    let canvas = document.getElementById("bgCanvas");
+    let context = canvas.getContext("2d");
     var endPoint = gridColumns * gridSize;
     for (var i = 0; i <= endPoint; i += gridSize) {
         context.beginPath();
@@ -306,7 +307,7 @@ function CreateInitialBall() {
     }
 }
 function CreateNextBall() {
-    for (i = 0; i < 3; i++) {
+    for (let i = 0; i < 3; i++) {
         var color = nextColors[i];
         var x = GetRandomNum();
         var y = GetRandomNum();
@@ -317,21 +318,12 @@ function CreateNextBall() {
             node.color = color;
             map.closeArea[id] = node;
             CreateBall(color, x, y);
-            //num++;
-            //map.endNode = node;
-            //checkResult(false);
+            map.setEndNode(node);
+            autoCheckResult();
         }
         else
             i--;
     }
-    //if (num < 3)
-    //    requestAnimationFrame(CreateNextBall);
-    //else
-    //{
-    //    nextColors = [];
-    //    num = 0;
-    //    map.resetArea();
-    //}
 }
 function GetRandomNum() {
     return gridSize * Math.floor(Math.random() * 9) + gridSize / 2;
@@ -350,9 +342,11 @@ function GetNextColors() {
     CreateBall(nextColors[2], 160, 380);
 }
 function CreateBall(color, x, y) {
-    var grd = context.createRadialGradient(x - 1, y - 2, 1, x, y, 10);
+    //增加小球渐变颜色，实现粗糙光照3d效果。
+    var grd = context.createRadialGradient(x - 2, y - 2, 1, x, y, 10);
     grd.addColorStop(1, color);
-    grd.addColorStop(0, bgColor);
+    grd.addColorStop(0, "white");
+
     context.fillStyle = grd;
     context.beginPath();
     context.arc(x, y, ballRadius, 0, 2 * Math.PI);
@@ -360,22 +354,21 @@ function CreateBall(color, x, y) {
 }
 function SelectBall() {
     map.startNode.currentY = map.startNode.y;
-    map.startNode.flag = 2;
+    //小球每一帧跳动幅度
+    map.startNode.flag = 1;
     JumpBall();
 }
 function JumpBall() {
-    RemoveBall(bgColor, map.startNode.x, map.startNode.currentY);
+    RemoveBall(map.startNode.x, map.startNode.currentY);
+    //小球跳动范围
     if (Math.abs(map.startNode.currentY - map.startNode.y) == 8)
         map.startNode.flag *= -1;
     map.startNode.currentY += map.startNode.flag;
     CreateBall(map.startNode.color, map.startNode.x, map.startNode.currentY);
     stopJump = requestAnimationFrame(JumpBall);
 }
-function RemoveBall(color, x, y) {
-    context.fillStyle = color;
-    context.beginPath();
-    context.arc(x, y, ballRadius + 1, 0, 2 * Math.PI);
-    context.fill();
+function RemoveBall(x, y) {
+    context.clearRect(x - ballRadius, y - ballRadius, ballRadius * 2, ballRadius * 2)
 }
 function getMousePos(evt) {
     var rect = canvas.getBoundingClientRect();
@@ -400,7 +393,7 @@ function getEliminatedBalls() {
     var v = [];
     var l = [];
     var r = [];
-    for (i = -1; i < 2; i++) {
+    for (let i = -1; i < 2; i++) {
         for (j = -1; j < 2; j++) {
             if (i == 0 && j == 0)
                 continue;
@@ -435,40 +428,50 @@ function getEliminatedBalls() {
     if (r.length >= 4)
         eliminatedBalls = eliminatedBalls.concat(r);
 }
-function checkResult(isGetScore) {
+function checkResult() {
     getEliminatedBalls();
     if (eliminatedBalls.length >= 4) {
-        if (isGetScore) {
-            if (eliminatedBalls.length + 1 == 5)
-                score += 10;
-            else {
-                getScore(10);
-                score += result;
-                result = 0;
-            }
-            context.fillStyle = bgColor;
-            context.fillRect(200, 373, 150, 20);
-            context.strokeText("Score : " + score, 200, 385);
+        if (eliminatedBalls.length + 1 == 5)
+            score += 10;
+        else {
+            getScore(10);
+            score += result;
+            result = 0;
         }
-        map.endNode.color = '';
-        map.endNode.isRoadBlock = false;
-        for (i = 0; i < eliminatedBalls.length; i++) {
-            eliminatedBalls[i].isRoadBlock = false;
-            eliminatedBalls[i].color = '';
-        }
-        RemoveBall(bgColor, map.endNode.x, map.endNode.y);
-        RemoveBalls();
+        context.fillStyle = bgColor;
+        context.fillRect(200, 373, 150, 20);
+        context.strokeText("Score : " + score, 200, 385);
+
+        ClearPathBalls();
     }
     else {
         eliminatedBalls = [];
         CreateNextBall();
+        GetNextColors();
     }
 }
+function autoCheckResult() {
+    getEliminatedBalls();
+    if (eliminatedBalls.length >= 4) {
+        ClearPathBalls();
+    }
+    else {
+        eliminatedBalls = [];
+    }
+}
+/**消除连线的小球*/
+function ClearPathBalls() {
+    map.endNode.color = '';
+    map.endNode.isRoadBlock = false;
+    for (i = 0; i < eliminatedBalls.length; i++) {
+        eliminatedBalls[i].isRoadBlock = false;
+        eliminatedBalls[i].color = '';
+    }
+    RemoveBall(map.endNode.x, map.endNode.y);
+    RemoveBalls();
+}
 function RemoveBalls() {
-    context.fillStyle = bgColor;
-    context.beginPath();
-    context.arc(eliminatedBalls[num1].x, eliminatedBalls[num1].y, ballRadius + 1, 0, 2 * Math.PI);
-    context.fill();
+    RemoveBall(eliminatedBalls[num1].x, eliminatedBalls[num1].y);
     num1++;
     if (num1 < eliminatedBalls.length)
         requestAnimationFrame(RemoveBalls);
