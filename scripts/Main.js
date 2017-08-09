@@ -233,11 +233,18 @@ function CheckIsGameOver() {
         return false;
 }
 
+function playSound(uri) {
+    let audio = new Audio(uri);
+    audio.play();
+}
+
 function onclick(event) {
     let mousePos = getMousePos(event);
     let node = map.getNode(mousePos.x, mousePos.y);
-    if (!node)
+    if (!node) {
         return;
+    }
+
     if (node.isRoadBlock) {
         cancelAnimationFrame(stopJump);
         if (map.startNode) {
@@ -247,8 +254,11 @@ function onclick(event) {
         map.setStartNode(node);
         SelectBall();
     } else {
-        if (!map.startNode)
+        if (!map.startNode) {
+            playSound('media/click-error.wav');
             return;
+        }
+
         map.setEndNode(node);
         map.getPath();
         if (paths.length > 0) {
@@ -259,6 +269,7 @@ function onclick(event) {
             map.startNode.color = bgColor;
             map.startNode.isRoadBlock = false;
             num = 1;
+            playSound('media/run.wav');
             moveAnimation();
         } else
             map.resetArea();
@@ -436,6 +447,7 @@ function CreateBall(color, x, y) {
 }
 
 function SelectBall() {
+    playSound('media/click.wav');
     map.startNode.currentY = map.startNode.y;
     //小球每一帧跳动幅度
     map.startNode.flag = 1;
@@ -544,6 +556,7 @@ function autoCheckResult() {
 }
 /**消除连线的小球*/
 function ClearPathBalls() {
+    playSound('media/bingo.wav');
     map.endNode.color = '';
     map.endNode.isRoadBlock = false;
     for (i = 0; i < eliminatedBalls.length; i++) {
