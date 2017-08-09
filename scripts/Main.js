@@ -185,7 +185,6 @@ let map = {
         if (map.openArea.length == 0) return null;
         map._orderOpenArea();
         map.closeArea[map.openArea[0].id] = map.openArea[0];
-        //document.getElementById(map.openArea[0].id).innerHTML = map.openArea[0].fObj.F + '^' + map.openArea[0].fObj.G + '^' + map.openArea[0].fObj.H;
         return map.openArea.shift();
     },
     /**  排序开启列表 */
@@ -271,8 +270,11 @@ function onclick(event) {
             num = 1;
             playSound('media/run.wav');
             moveAnimation();
-        } else
+        } else {
+            playSound('media/click-error.wav');
             map.resetArea();
+        }
+
     }
 }
 
