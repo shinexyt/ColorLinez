@@ -244,56 +244,66 @@ function onclick(event) {
         map.getPath();
         if (paths.length > 0) {
             cancelAnimationFrame(stopJump);
-            paths.reverse();
-            // movePath = SmoothPath(paths);
+            RemoveBall(map.startNode.x, map.startNode.currentY);
+            paths = SmoothPath(5);
             currentColor = map.startNode.color;
             map.startNode.color = bgColor;
             map.startNode.isRoadBlock = false;
-            //delete map.closeArea[map.startNode.id];
-            RemoveBall(map.startNode.x, map.startNode.currentY);
-            let moveAnimation = setInterval(function () {
-                if (num > 0)
-                    RemoveBall(paths[num - 1].x, paths[num - 1].y);
-                let x = paths[num].x;
-                let y = paths[num].y;
-                CreateBall(currentColor, x, y);
-                num++;
-                if (num >= paths.length) {
-                    clearInterval(moveAnimation);
-                    let node = map.getNode(x, y);
-                    node.color = currentColor;
-                    node.isRoadBlock = true;
-
-                    num = 0;
-                    paths = [];
-                    map.startNode = null;
-                    checkResult();
-                    map.resetArea();
-
-                }
-            }, 40);
+            num = 1;
+            requestAnimationFrame(moveAnimation);
         }
         else
             map.resetArea();
     }
 }
-function SmoothPath(frames) {
-    let tempPath = [];
-    tempPath.push({ x: map.startNode.x, y: map.startNode.y });
+function moveAnimation() {
+    RemoveBall(paths[num - 1].x, paths[num - 1].y);
+    let x = paths[num].x;
+    let y = paths[num].y;
+    CreateBall(currentColor, x, y);
+    num++;
+    if (num >= paths.length) {
+        clearInterval(moveAnimation);
+        let node = map.getNode(x, y);
+        node.color = currentColor;
+        node.isRoadBlock = true;
 
-    for (let i = 0; i < paths.length; i++) {
-        if (tempPath[i].x === paths[i].x) {
+        num = 0;
+        paths = [];
+        map.startNode = null;
+        checkResult();
+        map.resetArea();
+    }
+    else {
+        requestAnimationFrame(moveAnimation);
+    }
+}
+/**将路径步数进行分解 */
+function SmoothPath(frames) {
+    paths.reverse();
+    let tempPath = [];
+    let step = gridSize / frames;
+    paths.unshift({ x: map.startNode.x, y: map.startNode.y });
+    for (let i = 1; i < paths.length; i++) {
+        tempPath.push({ x: paths[i - 1].x, y: paths[i - 1].y });
+        if (paths[i - 1].x === paths[i].x) {
+            let flag = 1;
+            if (paths[i - 1].y > paths[i].y)
+                flag = -1;
             for (let j = 1; j < frames; j++) {
-                tempPath.push({ x: tempPath[i].x, y: tempPath[i].y + j * gridSize / frames });
+                tempPath.push({ x: paths[i - 1].x, y: paths[i - 1].y + flag * j * step });
             }
         }
         else {
+            let flag = 1;
+            if (paths[i - 1].x > paths[i].x)
+                flag = -1;
             for (let j = 1; j < frames; j++) {
-                tempPath.push({ x: tempPath[i].x + j * gridSize / frames, y: tempPath[i].y });
+                tempPath.push({ x: paths[i - 1].x + flag * j * step, y: paths[i - 1].y });
             }
         }
-        tempPath.push({ x: paths[i].x, y: paths[i].y });
     }
+    tempPath.push({ x: paths[paths.length - 1].x, y: paths[paths.length - 1].y });
     return tempPath;
 }
 function DrawRect() {
