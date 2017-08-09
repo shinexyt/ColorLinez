@@ -1,5 +1,6 @@
-body {
-    margin: 0;
+body,
+div {
+    margin: inherit 0;
     padding: 0;
 }
 
