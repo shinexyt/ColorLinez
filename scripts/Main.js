@@ -250,7 +250,7 @@ function onclick(event) {
             map.startNode.color = bgColor;
             map.startNode.isRoadBlock = false;
             num = 1;
-            requestAnimationFrame(moveAnimation);
+            moveAnimation();
         }
         else
             map.resetArea();
@@ -263,7 +263,6 @@ function moveAnimation() {
     CreateBall(currentColor, x, y);
     num++;
     if (num >= paths.length) {
-        clearInterval(moveAnimation);
         let node = map.getNode(x, y);
         node.color = currentColor;
         node.isRoadBlock = true;
