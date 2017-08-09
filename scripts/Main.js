@@ -1,5 +1,9 @@
 ﻿let canvas = document.getElementById("myCanvas");
 let context = canvas.getContext("2d");
+
+let tipsCanvas = document.getElementById("tipsCanvas");
+let tipsContext = tipsCanvas.getContext("2d");
+
 canvas.addEventListener('click', onclick, false);
 let bgColor = "beige";
 let gridColumns = 9;
@@ -17,6 +21,7 @@ let currentColor = '';
 let score = 0;
 let stopJump = null;
 let stopRemove = null;
+let stopMoveAnimation = null;
 let movePath = [];
 let map = {
     init: function () {
@@ -85,7 +90,11 @@ let map = {
         let _G = (Math.abs(aNode.x - cNode.x) === Math.abs(aNode.y - cNode.y) ? map.costEnergy_L : map.costEnergy_S);
         if (cNode.fObj) _G = cNode.fObj.G + _G;
 
-        return { F: _H + _G, H: _H, G: _G };
+        return {
+            F: _H + _G,
+            H: _H,
+            G: _G
+        };
     },
     /**  获取当前父节点周围的点  */
     getAroundNode: function (node) {
@@ -105,7 +114,10 @@ let map = {
                     mapNode = map.getNode(nodeX, nodeY);
 
                     //查找周围的新节点， 如果新节点处于拐角则跳过
-                    if (Math.abs(x) == Math.abs(y) && map._isCorner(mapNode, { x: x, y: y })) continue;
+                    if (Math.abs(x) == Math.abs(y) && map._isCorner(mapNode, {
+                            x: x,
+                            y: y
+                        })) continue;
 
                     if (!map.closeArea[mapNode.id]) {
                         _fObj = map.getF(node, mapNode);
@@ -208,10 +220,8 @@ let map = {
     DrawRect();
     CreateInitialBall();
     GetNextColors();
-    context.font = "15px Arial";
-    context.strokeText("Next colors : ", 0, 385);
-    context.strokeText("Score : 0", 200, 385);
 })();
+
 function CheckIsGameOver() {
     let count = 0
     for (item in map.closeArea) {
@@ -219,10 +229,10 @@ function CheckIsGameOver() {
     }
     if (count === gridColumns * gridRows) {
         return true;
-    }
-    else
+    } else
         return false;
 }
+
 function onclick(event) {
     let mousePos = getMousePos(event);
     let node = map.getNode(mousePos.x, mousePos.y);
@@ -236,8 +246,7 @@ function onclick(event) {
         }
         map.setStartNode(node);
         SelectBall();
-    }
-    else {
+    } else {
         if (!map.startNode)
             return;
         map.setEndNode(node);
@@ -251,11 +260,11 @@ function onclick(event) {
             map.startNode.isRoadBlock = false;
             num = 1;
             moveAnimation();
-        }
-        else
+        } else
             map.resetArea();
     }
 }
+
 function moveAnimation() {
     RemoveBall(paths[num - 1].x, paths[num - 1].y);
     let x = paths[num].x;
@@ -263,6 +272,7 @@ function moveAnimation() {
     CreateBall(currentColor, x, y);
     num++;
     if (num >= paths.length) {
+        cancelAnimationFrame(stopMoveAnimation);
         let node = map.getNode(x, y);
         node.color = currentColor;
         node.isRoadBlock = true;
@@ -272,9 +282,8 @@ function moveAnimation() {
         map.startNode = null;
         checkResult();
         map.resetArea();
-    }
-    else {
-        requestAnimationFrame(moveAnimation);
+    } else {
+        stopMoveAnimation = requestAnimationFrame(moveAnimation);
     }
 }
 /**将路径步数进行分解 */
@@ -282,46 +291,64 @@ function SmoothPath(frames) {
     paths.reverse();
     let tempPath = [];
     let step = gridSize / frames;
-    paths.unshift({ x: map.startNode.x, y: map.startNode.y });
+    paths.unshift({
+        x: map.startNode.x,
+        y: map.startNode.y
+    });
     for (let i = 1; i < paths.length; i++) {
-        tempPath.push({ x: paths[i - 1].x, y: paths[i - 1].y });
+        tempPath.push({
+            x: paths[i - 1].x,
+            y: paths[i - 1].y
+        });
         if (paths[i - 1].x === paths[i].x) {
             let flag = 1;
             if (paths[i - 1].y > paths[i].y)
                 flag = -1;
             for (let j = 1; j < frames; j++) {
-                tempPath.push({ x: paths[i - 1].x, y: paths[i - 1].y + flag * j * step });
+                tempPath.push({
+                    x: paths[i - 1].x,
+                    y: paths[i - 1].y + flag * j * step
+                });
             }
-        }
-        else {
+        } else {
             let flag = 1;
             if (paths[i - 1].x > paths[i].x)
                 flag = -1;
             for (let j = 1; j < frames; j++) {
-                tempPath.push({ x: paths[i - 1].x + flag * j * step, y: paths[i - 1].y });
+                tempPath.push({
+                    x: paths[i - 1].x + flag * j * step,
+                    y: paths[i - 1].y
+                });
             }
         }
     }
-    tempPath.push({ x: paths[paths.length - 1].x, y: paths[paths.length - 1].y });
+    tempPath.push({
+        x: paths[paths.length - 1].x,
+        y: paths[paths.length - 1].y
+    });
     return tempPath;
 }
+
 function DrawRect() {
-    let canvas = document.getElementById("bgCanvas");
-    let context = canvas.getContext("2d");
+    let bgCanvas = document.getElementById("bgCanvas");
+    let bgContext = bgCanvas.getContext("2d");
     let endPoint = gridColumns * gridSize;
+    bgContext.lineWidth = 0.5;
     for (let i = 0; i <= endPoint; i += gridSize) {
-        context.beginPath();
-        context.moveTo(0, i);
-        context.lineTo(endPoint, i);
-        context.closePath();
-        context.stroke();
-        context.beginPath();
-        context.moveTo(i, 0);
-        context.lineTo(i, endPoint);
-        context.closePath();
-        context.stroke();
+        bgContext.beginPath();
+        bgContext.moveTo(0, i);
+        bgContext.lineTo(endPoint, i);
+        bgContext.stroke();
+        bgContext.closePath();
+
+        bgContext.beginPath();
+        bgContext.moveTo(i, 0);
+        bgContext.lineTo(i, endPoint);
+        bgContext.stroke();
+        bgContext.closePath();
     }
 }
+
 function CreateInitialBall() {
     for (i = 0; i < 5; i++) {
         let color = GetRandomColor();
@@ -334,11 +361,11 @@ function CreateInitialBall() {
             node.color = color;
             map.closeArea[id] = node;
             CreateBall(color, x, y);
-        }
-        else
+        } else
             i--;
     }
 }
+
 function CreateNextBall() {
     for (let i = 0; i < 3; i++) {
         let color = nextColors[i];
@@ -354,34 +381,48 @@ function CreateNextBall() {
                 CreateBall(color, x, y);
                 map.setEndNode(node);
                 autoCheckResult();
-            }
-            else {
+            } else {
                 alert('Game Over!');
                 window.location.reload();
                 break;
             }
 
-        }
-        else
+        } else
             i--;
     }
 }
+
 function GetRandomNum() {
     return gridSize * Math.floor(Math.random() * 9) + gridSize / 2;
 }
+
 function GetRandomColor() {
     return colors[Math.floor(Math.random() * 5)];
 }
+
 function GetNextColors() {
     nextColors = [];
     nextColors.push(colors[Math.floor(Math.random() * 5)]);
     nextColors.push(colors[Math.floor(Math.random() * 5)]);
     nextColors.push(colors[Math.floor(Math.random() * 5)]);
 
-    CreateBall(nextColors[0], 100, 380);
-    CreateBall(nextColors[1], 130, 380);
-    CreateBall(nextColors[2], 160, 380);
+    CreateTipsBall(nextColors[0], 15, 15);
+    CreateTipsBall(nextColors[1], 45, 15);
+    CreateTipsBall(nextColors[2], 75, 15);
 }
+
+function CreateTipsBall(color, x, y) {
+    //增加小球渐变颜色，实现粗糙光照3d效果。
+    let grd = tipsContext.createRadialGradient(x - 2, y - 2, 1, x, y, 10);
+    grd.addColorStop(1, color);
+    grd.addColorStop(0, "white");
+    // context.fillStyle = "rgba(255,255,255,0.5)";
+    tipsContext.fillStyle = grd;
+    tipsContext.beginPath();
+    tipsContext.arc(x, y, ballRadius, 0, 2 * Math.PI);
+    tipsContext.fill();
+}
+
 function CreateBall(color, x, y) {
     //增加小球渐变颜色，实现粗糙光照3d效果。
     let grd = context.createRadialGradient(x - 2, y - 2, 1, x, y, 10);
@@ -393,12 +434,14 @@ function CreateBall(color, x, y) {
     context.arc(x, y, ballRadius, 0, 2 * Math.PI);
     context.fill();
 }
+
 function SelectBall() {
     map.startNode.currentY = map.startNode.y;
     //小球每一帧跳动幅度
     map.startNode.flag = 1;
     JumpBall();
 }
+
 function JumpBall() {
     RemoveBall(map.startNode.x, map.startNode.currentY);
     //小球跳动范围
@@ -408,9 +451,11 @@ function JumpBall() {
     CreateBall(map.startNode.color, map.startNode.x, map.startNode.currentY);
     stopJump = requestAnimationFrame(JumpBall);
 }
+
 function RemoveBall(x, y) {
     context.clearRect(x - ballRadius, y - ballRadius, ballRadius * 2, ballRadius * 2)
 }
+
 function getMousePos(evt) {
     let rect = canvas.getBoundingClientRect();
     let x = evt.clientX - rect.left * (canvas.width / rect.width);
@@ -420,6 +465,7 @@ function getMousePos(evt) {
         y: Math.ceil(y / gridSize) * gridSize - gridSize / 2
     }
 }
+
 function getScore(startScore) {
     num++;
     result = startScore + 4 * num - 2;
@@ -428,6 +474,7 @@ function getScore(startScore) {
     else
         num = 0;
 }
+
 function getEliminatedBalls() {
     let node = map.endNode;
     let h = [];
@@ -451,11 +498,9 @@ function getEliminatedBalls() {
                         else
                             h.push(leftNode);
                         //eliminatedBalls.push(leftNode);
-                    }
-                    else
+                    } else
                         break;
-                }
-                else
+                } else
                     break;
             }
         }
@@ -469,6 +514,7 @@ function getEliminatedBalls() {
     if (r.length >= 4)
         eliminatedBalls = eliminatedBalls.concat(r);
 }
+
 function checkResult() {
     getEliminatedBalls();
     if (eliminatedBalls.length >= 4) {
@@ -479,24 +525,20 @@ function checkResult() {
             score += result;
             result = 0;
         }
-        context.fillStyle = bgColor;
-        context.fillRect(200, 373, 150, 20);
-        context.strokeText("Score : " + score, 200, 385);
-
+        document.getElementById('scoreboard').innerText = score;
         ClearPathBalls();
-    }
-    else {
+    } else {
         eliminatedBalls = [];
         CreateNextBall();
         GetNextColors();
     }
 }
+
 function autoCheckResult() {
     getEliminatedBalls();
     if (eliminatedBalls.length >= 4) {
         ClearPathBalls();
-    }
-    else {
+    } else {
         eliminatedBalls = [];
     }
 }
@@ -511,6 +553,7 @@ function ClearPathBalls() {
     RemoveBall(map.endNode.x, map.endNode.y);
     RemoveBalls();
 }
+
 function RemoveBalls() {
     RemoveBall(eliminatedBalls[num1].x, eliminatedBalls[num1].y);
     num1++;
