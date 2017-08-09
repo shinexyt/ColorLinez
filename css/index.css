@@ -1,34 +1,39 @@
-   canvas {
-       position: absolute;
-       top: 0;
-       left: 0;
-       margin: 0 auto;
-   }
+body {
+    margin: 0;
+    padding: 0;
+}
 
-   .container {
-       width: 360px;
-       height: 360px;
-       margin: 0 auto;
-       position: relative
-   }
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0 auto;
+}
 
-   .tips {
-       margin-top: 7px;
-       padding-top: 4px;
-       height: 30px;
-       position: relative;
-       width: 360px;
-       margin: 0 auto;
-   }
+.container {
+    width: 360px;
+    height: 360px;
+    margin: 0 auto;
+    position: relative
+}
 
-   #tipsCanvas {
-       left: 100px;
-   }
+.tips {
+    margin-top: 7px;
+    padding-top: 4px;
+    height: 30px;
+    position: relative;
+    width: 360px;
+    margin: 0 auto;
+}
 
-   .tips-left {
-       float: left;
-   }
+#tipsCanvas {
+    left: 100px;
+}
 
-   .tips-right {
-       float: right;
-   }
+.tips-left {
+    float: left;
+}
+
+.tips-right {
+    float: right;
+}
